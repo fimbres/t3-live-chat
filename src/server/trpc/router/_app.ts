@@ -1,9 +1,9 @@
 import { router } from "../trpc";
 import { authRouter } from "./auth";
-import { exampleRouter } from "./example";
+import { roomRouter } from "./room";
 
 export const appRouter = router({
-  example: exampleRouter,
+  example: roomRouter,
   auth: authRouter,
 });
 

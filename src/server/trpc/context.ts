@@ -1,39 +1,36 @@
-import { type inferAsyncReturnType } from "@trpc/server";
-import { type CreateNextContextOptions } from "@trpc/server/adapters/next";
-import { type Session } from "next-auth";
+import * as trpc from "@trpc/server";
+import type ws from "ws";
+import type * as trpcNext from "@trpc/server/adapters/next";
+import { EventEmitter } from "node:events";
+import type { IncomingMessage } from "http";
+import { unstable_getServerSession as getServerSession } from "next-auth";
 
-import { getServerAuthSession } from "../common/get-server-auth-session";
+import { authOptions as nextAuthOptions } from "../../pages/api/auth/[...nextauth]";
 import { prisma } from "../db/client";
+import { getSession } from "next-auth/react";
+import type { NodeHTTPCreateContextFnOptions } from "@trpc/server/dist/adapters/node-http";
 
-type CreateContextOptions = {
-  session: Session | null;
-};
+const ee = new EventEmitter();
 
-/** Use this helper for:
- * - testing, so we dont have to mock Next.js' req/res
- * - trpc's `createSSGHelpers` where we don't have req/res
- * @see https://create.t3.gg/en/usage/trpc#-servertrpccontextts
- **/
-export const createContextInner = async (opts: CreateContextOptions) => {
+export const createContext = async (
+  opts?:
+    | trpcNext.CreateNextContextOptions
+    | NodeHTTPCreateContextFnOptions<IncomingMessage, ws>
+) => {
+  const req = opts?.req;
+  const res = opts?.res;
+
+  const session = req && res && (await getSession({ req }));
+
   return {
-    session: opts.session,
+    req,
+    res,
+    session,
     prisma,
+    ee,
   };
 };
 
-/**
- * This is the actual context you'll use in your router
- * @link https://trpc.io/docs/context
- **/
-export const createContext = async (opts: CreateNextContextOptions) => {
-  const { req, res } = opts;
+export type Context = trpc.inferAsyncReturnType<typeof createContext>;
 
-  // Get the session from the server using the unstable_getServerSession wrapper function
-  const session = await getServerAuthSession({ req, res });
-
-  return await createContextInner({
-    session,
-  });
-};
-
-export type Context = inferAsyncReturnType<typeof createContext>;
+export const createRouter = () => trpc.router<Context>();

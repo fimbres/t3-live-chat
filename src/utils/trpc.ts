@@ -1,7 +1,8 @@
-import { httpBatchLink, loggerLink } from "@trpc/client";
+import { httpBatchLink, loggerLink, wsLink } from "@trpc/client";
 import { createTRPCNext } from "@trpc/next";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import superjson from "superjson";
+import { createWSClient } from "@trpc/client";
 
 import { type AppRouter } from "../server/trpc/router/_app";
 
@@ -11,8 +12,12 @@ const getBaseUrl = () => {
   return `http://localhost:${process.env.PORT ?? 3000}`; // dev SSR should use localhost
 };
 
+const client = createWSClient({
+  url: process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3011"
+});
+
 export const trpc = createTRPCNext<AppRouter>({
-  config() {
+  config({ ctx }) {
     return {
       transformer: superjson,
       links: [
@@ -24,7 +29,16 @@ export const trpc = createTRPCNext<AppRouter>({
         httpBatchLink({
           url: `${getBaseUrl()}/api/trpc`,
         }),
+        wsLink({
+          client,
+        })
       ],
+      headers() {
+        if(ctx?.req) {
+          return { ...ctx.req.headers };
+        }
+        return {};
+      }
     };
   },
   ssr: false,

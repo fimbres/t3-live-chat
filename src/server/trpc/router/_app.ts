@@ -1,9 +1,14 @@
 import { router } from "../trpc";
 import { authRouter } from "./auth";
 import { roomRouter } from "./room";
+import fetch from "node-fetch";
+
+if(!global.fetch){
+  (global.fetch as unknown) = fetch;
+}
 
 export const appRouter = router({
-  example: roomRouter,
+  room: roomRouter,
   auth: authRouter,
 });
 

@@ -6,7 +6,8 @@
   "scripts": {
     "build": "next build",
     "dev:ws": "nodemon -I --exec node --es-module-specifier-resolution=node --loader ts-node/esm src/server/wsServer.ts",
-    "dev": "next dev",
+    "dev:next": "next dev",
+    "dev": "yarn dev:next && yarn dev:ws",
     "postinstall": "prisma generate",
     "lint": "next lint",
     "start": "next start"

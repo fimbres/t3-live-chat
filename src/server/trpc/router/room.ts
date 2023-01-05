@@ -3,13 +3,15 @@ import { Events } from "../../../constants/events";
 import type { Message} from "../../../constants/schemas";
 import { messageSubSchema, sendMessageSchema } from "../../../constants/schemas";
 import { observable } from "@trpc/server/observable";
-import { router, publicProcedure, protectedProcedure } from "../trpc";
+import { router, publicProcedure } from "../trpc";
 
 export const roomRouter = router({
     onSendMessage: publicProcedure.input(messageSubSchema).subscription(({ ctx, input }) => {
         return observable<Message>((emit) => {
             function onMessage(data: Message) {
-                if(input.roomId !== data.roomId){
+                const isPublic = input.roomId === undefined;
+
+                if(isPublic || data.roomId === input.roomId){
                     emit.next(data);
                 }
             }
